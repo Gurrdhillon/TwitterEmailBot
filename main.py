@@ -1,5 +1,5 @@
 ##Imports 
-from datetime import datetime
+from datetime import datetime, timedelta
 import tweepy               ##Required library for working with twitter api
 import configparser         ##Required  library for reading credentials from the config file
 import json                 ##required for reading the output in a pretty json format
@@ -10,70 +10,83 @@ from email.message import EmailMessage   ##Library for creating the email
 import ssl   ##Library for adding an additional security layer as SMTP is non-secure porotocol
 import smtplib  ##standard protocl for emial services, simple mail transfer protocol
 
+
+def last_day_of_month(dt):
+    todays_month = dt.month
+    tomorrows_month = (dt + timedelta(days=1)).month
+    return tomorrows_month != todays_month
+
+##Run script only on last day of every month
+lastday =  last_day_of_month(datetime.now())
+if lastday:
+
 ##First of all all the info from the config file
 
-### Create an instanc of configparse
-config = configparser.ConfigParser()
-###Read the config file
-config.read('config.ini')
+    ### Create an instanc of configparse
+    config = configparser.ConfigParser()
+    ###Read the config file
+    config.read('config.ini')
 
-api_key = config['twitter']['api_key']
-api_Key_secret = config['twitter']['api_Key_secret']
-acess_token = config['twitter']['acess_token']
-acess_token_secret = config['twitter']['acess_token_secret']
+    api_key = config['twitter']['api_key']
+    api_Key_secret = config['twitter']['api_Key_secret']
+    acess_token = config['twitter']['acess_token']
+    acess_token_secret = config['twitter']['acess_token_secret']
 
-# print(acess_token_secret)
-
-
-## authentication
-auth = tweepy.OAuth1UserHandler(api_key,api_Key_secret)
-auth.set_access_token(acess_token,acess_token_secret)
+    # print(acess_token_secret)
 
 
-api = tweepy.API(auth)
+    ## authentication
+    auth = tweepy.OAuth1UserHandler(api_key,api_Key_secret)
+    auth.set_access_token(acess_token,acess_token_secret)
 
-print(api)
 
-user= 'Naval'
-limit = 100
+    api = tweepy.API(auth)
 
-tweets = api.user_timeline(screen_name=user,count=limit,include_rts = False, tweet_mode = 'extended')
-# tweets = api.user_timeline(usercount=limit,include_rts = False, tweet_mode = 'extended')
+    print(api)
 
-# print("some stuff")
-# now = datetime.now()
-# month_name = "Tweets for month of " + now.strftime('%B')
+    user= 'Naval'
+    limit = 100
 
-mytweets = []
+    tweets = api.user_timeline(screen_name=user,count=limit,include_rts = False, tweet_mode = 'extended')
+    # tweets = api.user_timeline(usercount=limit,include_rts = False, tweet_mode = 'extended')
 
-for tweet in tweets:
-    if tweet.created_at.month == datetime.now().month and tweet.full_text[0] != '@':
-        # print("create at:", tweet.created_at)
-        # print(tweet.full_text)
-        mytweets.append(tweet.full_text)
+    # print("some stuff")
+    # now = datetime.now()
+    # month_name = "Tweets for month of " + now.strftime('%B')
 
-mystring = '\n\n'.join(mytweets)
+    mytweets = []
 
-# print(mystring)
+    for tweet in tweets:
+        if tweet.created_at.month == datetime.now().month and tweet.full_text[0] != '@':
+            # print("create at:", tweet.created_at)
+            # print(tweet.full_text)
+            mytweets.append(tweet.full_text)
 
- ########### Here is the sending Email part #################
-email_sender = 'developer.gursevak@gmail.com'
-email_password = config['twitter']['email_password']
-email_receiver = 'gursevaks2001@gmail.com'
+    mystring = '\n\n'.join(mytweets)
 
-print(email_password)
+    # print(mystring)
 
-subject = 'testing email for twitter bot'
-body = mystring
+    ########### Here is the sending Email part #################
+    email_sender = 'developer.gursevak@gmail.com'
+    email_password = config['twitter']['email_password']
+    email_receiver = 'gursevaks2001@gmail.com'
 
-em = EmailMessage()
-em['From'] = email_sender
-em['To'] = email_receiver
-em['Subject'] = subject
-em.set_content(body)
+    print(email_password)
 
-context = ssl.create_default_context()
+    subject = 'testing email for twitter bot'
+    body = mystring
 
-with smtplib.SMTP_SSL('smtp.gmail.com', 465, context = context) as smtp:
-    smtp.login(email_sender,email_password)
-    smtp.sendmail(email_sender,email_receiver,em.as_string())
+    em = EmailMessage()
+    em['From'] = email_sender
+    em['To'] = email_receiver
+    em['Subject'] = subject
+    em.set_content(body)
+
+    context = ssl.create_default_context()
+
+    with smtplib.SMTP_SSL('smtp.gmail.com', 465, context = context) as smtp:
+        smtp.login(email_sender,email_password)
+        smtp.sendmail(email_sender,email_receiver,em.as_string())
+
+else:
+    print("not last day")
